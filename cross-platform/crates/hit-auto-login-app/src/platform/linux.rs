@@ -12,7 +12,7 @@ use std::{
 use async_trait::async_trait;
 use futures_util::StreamExt;
 use gtk::{glib, prelude::*};
-use hit_auto_login_core::{Configuration, CoreError, RunTrigger, WifiAdapter};
+use hit_auto_login_core::{CoreError, RunTrigger, WifiAdapter};
 use ksni::TrayMethods;
 use tokio::{process::Command, time::timeout};
 
@@ -193,7 +193,6 @@ enum UiCommand {
     Quit,
 }
 
-#[derive(Debug)]
 struct LinuxTray {
     ui: glib::Sender<UiCommand>,
     controller: Arc<AppController>,
@@ -222,7 +221,7 @@ impl ksni::Tray for LinuxTray {
             StandardItem {
                 label: "打开设置".into(),
                 icon_name: "preferences-system".into(),
-                activate: Box::new(|tray| {
+                activate: Box::new(|tray: &mut LinuxTray| {
                     let _ = tray.ui.send(UiCommand::Show);
                 }),
                 ..Default::default()
@@ -231,7 +230,9 @@ impl ksni::Tray for LinuxTray {
             StandardItem {
                 label: "立即检测".into(),
                 icon_name: "network-wireless".into(),
-                activate: Box::new(|tray| tray.controller.trigger(RunTrigger::Manual)),
+                activate: Box::new(|tray: &mut LinuxTray| {
+                    tray.controller.trigger(RunTrigger::Manual)
+                }),
                 ..Default::default()
             }
             .into(),
@@ -239,7 +240,7 @@ impl ksni::Tray for LinuxTray {
             StandardItem {
                 label: "退出".into(),
                 icon_name: "application-exit".into(),
-                activate: Box::new(|tray| {
+                activate: Box::new(|tray: &mut LinuxTray| {
                     let _ = tray.ui.send(UiCommand::Quit);
                 }),
                 ..Default::default()
@@ -337,7 +338,7 @@ impl LinuxUi {
         exit.connect_clicked(|_| gtk::main_quit());
         ui.window.connect_delete_event(|window, _| {
             window.hide();
-            gtk::Inhibit(true)
+            glib::Propagation::Stop
         });
         ui
     }
