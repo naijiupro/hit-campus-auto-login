@@ -1,0 +1,17 @@
+# Local portal captures may contain a real account or campus IP. Never publish them.
+/哈尔滨工业大学.html
+/哈尔滨工业大学_登录后.webarchive
+
+# Build outputs and project-local toolchains
+/.build/
+/dist/
+/cross-platform/target/
+/cross-platform/dist/
+/cross-platform/.tools/
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
