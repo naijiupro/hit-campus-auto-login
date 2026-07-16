@@ -1,5 +1,5 @@
 #define MyAppName "HIT 校园网自动登录"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppExeName "hit-auto-login.exe"
 
 [Setup]
@@ -28,4 +28,3 @@ Filename: "{app}\{#MyAppExeName}"; Description: "启动 {#MyAppName}"; Flags: no
 
 [UninstallRun]
 Filename: "{cmd}"; Parameters: "/c reg delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v HITAutoLogin /f"; Flags: runhidden; RunOnceId: "RemoveAutoStart"
-
