@@ -1,6 +1,6 @@
 # HIT 校园网自动登录（Windows / Linux）
 
-这是 macOS 1.0.1 之后的共享 Rust 实现，目标平台为 Windows 10/11 与使用 NetworkManager、systemd 的主流 Linux 桌面。程序是事件驱动的：登录启动、系统恢复、屏幕恢复或用户手动操作时执行一次有限流程，空闲时不循环探测网络。
+这是对齐 macOS 1.0.2 门户兼容性修复的共享 Rust 实现，目标平台为 Windows 10/11 与使用 NetworkManager、systemd 的主流 Linux 桌面。程序是事件驱动的：登录启动、系统恢复、屏幕恢复或用户手动操作时执行一次有限流程，空闲时不循环探测网络。
 
 选择 Rust 的原因是认证算法可以只维护一份，同时能生成不依赖 Electron 或 Python 运行时的原生可执行文件。平台层只负责 Wi‑Fi、启动项、系统事件和界面。
 
@@ -113,9 +113,21 @@ GitHub Actions 配置会分别在 Ubuntu 22.04 和 Windows Server 2022 构建 re
 
 账号密码按需求明文保存，但不会写入项目、测试或日志。程序不输出密码、challenge、完整 info、完整认证 URL；认证请求的底层网络错误会被替换为阶段化信息，门户消息中的 URL 会被清理并截断。当前版本默认不创建持久日志文件。
 
+## 门户认证故障排查
+
+### 门户返回 `login_error` 或界面曾只显示“认证失败：0”
+
+v1.0.1 修复了以下协议兼容问题：
+
+- 所有 GET 查询参数均按 `application/x-www-form-urlencoded` 规则逐项编码，Srun `info` 中的原始 `+`、`/`、`=` 分别发送为 `%2B`、`%2F`、`%3D`；
+- 获取 challenge 后优先使用响应中的 `client_ip`，仅在缺失时回退到门户 HTML 的 `user_ip`；
+- 门户首页、challenge 和登录请求共用一个保留 Cookie 的 HTTP Client，并发送桌面浏览器风格的 `Accept`、`Accept-Language`、`Referer` 和平台 User-Agent；
+- 数值 `0`、字符串 `"0"`、空字符串和笼统的 `fail` 不再作为最终错误消息；`E2553` 等常见错误码会显示中文解释。
+
+如果仍然失败，请只记录阶段、`error`/非零 `ecode` 和清理后的提示，不要复制完整认证 URL、密码、challenge、info 或 chksum。
+
 ## 真实校园网验收
 
 仓库外的真实 HIT-WLAN 环境仍需作为发布前最终步骤。请复制 [E2E_TEST_RECORD.md](E2E_TEST_RECORD.md) 记录操作系统、Wi‑Fi 后端、登录前状态、门户结果和公网验证；不要记录账号、密码、challenge、完整 URL 或客户端 IP。
 
 已知限制见 [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md)。
-

@@ -13,7 +13,9 @@ pub use crypto::{
     LoginParameters, custom_base64, hmac_md5, make_login_parameters, sha1_hex, xencode,
 };
 pub use parsing::{PortalFields, parse_json_or_jsonp, parse_portal_fields};
-pub use portal::SrunPortalClient;
+pub use portal::{
+    FormQueryEncoder, PortalInterpretation, PortalResponseInterpreter, SrunPortalClient,
+};
 pub use workflow::{
     Connectivity, CoreError, PortalAuthenticator, ProgressCallback, WifiAdapter, Workflow,
     WorkflowLimits, WorkflowResult,
