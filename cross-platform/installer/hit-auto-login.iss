@@ -1,5 +1,5 @@
 #define MyAppName "HIT 校园网自动登录"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.0.2"
 #define MyAppExeName "hit-auto-login.exe"
 
 [Setup]

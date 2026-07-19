@@ -25,7 +25,12 @@ impl SystemConnectivityChecker {
     async fn ping_baidu(&self) -> bool {
         let mut command = Command::new("ping");
         #[cfg(target_os = "windows")]
-        command.args(["-n", "1", "-w", "2000", "baidu.com"]);
+        {
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            command
+                .args(["-n", "1", "-w", "2000", "baidu.com"])
+                .creation_flags(CREATE_NO_WINDOW);
+        }
         #[cfg(not(target_os = "windows"))]
         command.args(["-c", "1", "-W", "2", "baidu.com"]);
         command.stdout(Stdio::null()).stderr(Stdio::null());

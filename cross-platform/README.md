@@ -59,6 +59,8 @@ cross-platform\scripts\install-windows.ps1
 
 程序安装到 `%LOCALAPPDATA%\Programs\HITAutoLogin`。配置保存在 `%APPDATA%\HITAutoLogin\config.json`。登录启动使用 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`，设置界面可以随时启用或关闭。
 
+v1.0.2 修复了程序启动时提示“无法定位程序输入点 `GetWindowSubclass`”的问题。Windows 构建现在会嵌入 `Microsoft.Windows.Common-Controls` 6.0 manifest，并在打包前从 EXE 资源中读取和验证该声明；缺失时构建脚本和 CI 会直接失败，不再生成不可启动的发布包。设置窗口同时改为简洁的高 DPI 布局和 Wi-Fi 图标，网络探测使用隐藏子进程，不再闪现命令行窗口。
+
 Windows 使用 `wlanapi.dll` Native Wi‑Fi API，不解析 `netsh` 的本地化文本；如果不存在 HIT-WLAN 配置，会创建开放网络 WLAN Profile。恢复事件由窗口消息 `WM_POWERBROADCAST` 的 `PBT_APMRESUMEAUTOMATIC` 触发。
 
 ## 实际网络流程

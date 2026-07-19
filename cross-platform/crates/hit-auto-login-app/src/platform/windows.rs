@@ -37,6 +37,7 @@ use crate::{
 
 const WM_POWERBROADCAST: u32 = 0x0218;
 const PBT_APMRESUMEAUTOMATIC: usize = 0x0012;
+const APP_ICON: &[u8] = include_bytes!("../../resources/wifi.ico");
 
 #[derive(Default)]
 pub struct PlatformWifi;
@@ -272,24 +273,32 @@ pub fn set_launch_at_login(enabled: bool) -> io::Result<()> {
 struct WindowsControls {
     window: nwg::Window,
     icon: nwg::Icon,
+    header_icon: nwg::Icon,
     tray: nwg::TrayNotification,
     tray_menu: nwg::Menu,
     menu_settings: nwg::MenuItem,
     menu_detect: nwg::MenuItem,
     menu_exit: nwg::MenuItem,
+    header_image: nwg::ImageFrame,
     title: nwg::Label,
     subtitle: nwg::Label,
-    username_label: nwg::Label,
     username: nwg::TextInput,
-    password_label: nwg::Label,
     password: nwg::TextInput,
     privacy: nwg::Label,
     launch_at_login: nwg::CheckBox,
     save: nwg::Button,
     save_detect: nwg::Button,
+    divider: nwg::Frame,
+    status_image: nwg::ImageFrame,
     status: nwg::Label,
     detail: nwg::Label,
+    footer: nwg::Label,
     exit: nwg::Button,
+    title_font: nwg::Font,
+    subtitle_font: nwg::Font,
+    input_font: nwg::Font,
+    status_font: nwg::Font,
+    small_font: nwg::Font,
     notice: nwg::Notice,
 }
 
@@ -305,15 +314,43 @@ impl WindowsUi {
     fn build(
         controller: Arc<AppController>,
         receiver: mpsc::Receiver<AppEvent>,
+        show_on_start: bool,
     ) -> Result<Rc<Self>, nwg::NwgError> {
         let mut c = WindowsControls::default();
         nwg::Icon::builder()
-            .source_system(Some(nwg::OemIcon::Information))
+            .source_bin(Some(APP_ICON))
+            .size(Some((32, 32)))
             .build(&mut c.icon)?;
+        nwg::Icon::builder()
+            .source_bin(Some(APP_ICON))
+            .size(Some((40, 40)))
+            .build(&mut c.header_icon)?;
+        nwg::Font::builder()
+            .family("Microsoft YaHei UI")
+            .size(22)
+            .weight(700)
+            .build(&mut c.title_font)?;
+        nwg::Font::builder()
+            .family("Microsoft YaHei UI")
+            .size(14)
+            .build(&mut c.subtitle_font)?;
+        nwg::Font::builder()
+            .family("Microsoft YaHei UI")
+            .size(18)
+            .build(&mut c.input_font)?;
+        nwg::Font::builder()
+            .family("Microsoft YaHei UI")
+            .size(16)
+            .weight(700)
+            .build(&mut c.status_font)?;
+        nwg::Font::builder()
+            .family("Microsoft YaHei UI")
+            .size(14)
+            .build(&mut c.small_font)?;
         nwg::Window::builder()
             .flags(nwg::WindowFlags::WINDOW)
-            .size((430, 405))
-            .position((520, 220))
+            .size((520, 455))
+            .center(true)
             .title("HIT 校园网自动登录")
             .icon(Some(&c.icon))
             .build(&mut c.window)?;
@@ -340,40 +377,44 @@ impl WindowsUi {
             .build(&mut c.menu_exit)?;
 
         let config = controller.configuration();
+        nwg::ImageFrame::builder()
+            .parent(&c.window)
+            .position((24, 22))
+            .size((40, 40))
+            .icon(Some(&c.header_icon))
+            .build(&mut c.header_image)?;
         label(
             &mut c.title,
             &c.window,
             "HIT 校园网自动登录",
-            (18, 16),
-            (390, 28),
+            (76, 18),
+            (414, 30),
+            Some(&c.title_font),
         )?;
         label(
             &mut c.subtitle,
             &c.window,
             "HIT-WLAN · wp.hit.edu.cn",
-            (18, 43),
-            (390, 22),
+            (76, 45),
+            (414, 22),
+            Some(&c.subtitle_font),
         )?;
-        label(&mut c.username_label, &c.window, "学号", (18, 78), (70, 24))?;
         nwg::TextInput::builder()
             .parent(&c.window)
-            .position((92, 74))
-            .size((310, 28))
+            .position((24, 86))
+            .size((472, 36))
             .text(&config.username)
+            .placeholder_text(Some("学号"))
+            .font(Some(&c.input_font))
             .limit(64)
             .build(&mut c.username)?;
-        label(
-            &mut c.password_label,
-            &c.window,
-            "密码",
-            (18, 118),
-            (70, 24),
-        )?;
         nwg::TextInput::builder()
             .parent(&c.window)
-            .position((92, 114))
-            .size((310, 28))
+            .position((24, 132))
+            .size((472, 36))
             .text(&config.password)
+            .placeholder_text(Some("密码"))
+            .font(Some(&c.input_font))
             .password(Some('●'))
             .limit(256)
             .build(&mut c.password)?;
@@ -381,14 +422,16 @@ impl WindowsUi {
             &mut c.privacy,
             &c.window,
             "账号密码以明文配置文件保存；日志不会记录认证敏感参数。",
-            (18, 151),
-            (390, 36),
+            (24, 178),
+            (472, 26),
+            Some(&c.small_font),
         )?;
         nwg::CheckBox::builder()
             .parent(&c.window)
-            .position((18, 188))
-            .size((300, 28))
+            .position((24, 210))
+            .size((360, 30))
             .text("登录 Windows 时自动启动")
+            .font(Some(&c.input_font))
             .check_state(if config.launch_at_login {
                 nwg::CheckBoxState::Checked
             } else {
@@ -397,36 +440,58 @@ impl WindowsUi {
             .build(&mut c.launch_at_login)?;
         nwg::Button::builder()
             .parent(&c.window)
-            .position((18, 226))
-            .size((105, 32))
+            .position((24, 252))
+            .size((100, 36))
             .text("保存")
             .build(&mut c.save)?;
         nwg::Button::builder()
             .parent(&c.window)
-            .position((133, 226))
-            .size((175, 32))
+            .position((136, 252))
+            .size((188, 36))
             .text("保存并立即检测")
             .build(&mut c.save_detect)?;
-        nwg::Button::builder()
+        nwg::Frame::builder()
             .parent(&c.window)
-            .position((323, 226))
-            .size((79, 32))
-            .text("退出")
-            .build(&mut c.exit)?;
+            .position((24, 310))
+            .size((472, 1))
+            .flags(nwg::FrameFlags::VISIBLE | nwg::FrameFlags::BORDER)
+            .build(&mut c.divider)?;
+        nwg::ImageFrame::builder()
+            .parent(&c.window)
+            .position((24, 332))
+            .size((32, 32))
+            .icon(Some(&c.icon))
+            .build(&mut c.status_image)?;
         label(
             &mut c.status,
             &c.window,
             "等待首次检测",
-            (18, 282),
-            (384, 28),
+            (68, 326),
+            (428, 28),
+            Some(&c.status_font),
         )?;
         label(
             &mut c.detail,
             &c.window,
-            "事件触发运行，无后台网络轮询",
-            (18, 316),
-            (384, 48),
+            "事件触发运行，无后台循环轮询",
+            (68, 353),
+            (428, 30),
+            Some(&c.small_font),
         )?;
+        label(
+            &mut c.footer,
+            &c.window,
+            "关闭窗口后仍在系统托盘运行",
+            (24, 407),
+            (360, 28),
+            Some(&c.small_font),
+        )?;
+        nwg::Button::builder()
+            .parent(&c.window)
+            .position((420, 401))
+            .size((76, 34))
+            .text("退出")
+            .build(&mut c.exit)?;
         nwg::Notice::builder()
             .parent(&c.window)
             .build(&mut c.notice)?;
@@ -502,7 +567,7 @@ impl WindowsUi {
             }
         });
 
-        if !config.credentials_present() {
+        if show_on_start || !config.credentials_present() {
             ui.show_settings();
         }
         Ok(ui)
@@ -571,12 +636,14 @@ fn label(
     text: &str,
     position: (i32, i32),
     size: (i32, i32),
+    font: Option<&nwg::Font>,
 ) -> Result<(), nwg::NwgError> {
     nwg::Label::builder()
         .parent(parent)
         .position(position)
         .size(size)
         .text(text)
+        .font(font)
         .build(out)
 }
 
@@ -585,14 +652,21 @@ pub fn run() -> Result<(), AppError> {
         .map_err(|error| AppError::Platform(error.to_string()))?
         .ok_or(AppError::AlreadyRunning)?;
     nwg::init().map_err(|error| AppError::Platform(error.to_string()))?;
-    let _ = nwg::Font::set_global_family("Microsoft YaHei UI");
+    let mut default_font = nwg::Font::default();
+    nwg::Font::builder()
+        .family("Microsoft YaHei UI")
+        .size(16)
+        .build(&mut default_font)
+        .map_err(|error| AppError::Platform(error.to_string()))?;
+    let _ = nwg::Font::set_global_default(Some(default_font));
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .map_err(|error| AppError::Platform(error.to_string()))?;
     let (sender, receiver) = mpsc::channel();
     let controller = Arc::new(AppController::new(runtime.handle().clone(), sender)?);
-    let _ui = WindowsUi::build(controller.clone(), receiver)
+    let show_on_start = !std::env::args_os().any(|argument| argument == "--autostart");
+    let _ui = WindowsUi::build(controller.clone(), receiver, show_on_start)
         .map_err(|error| AppError::Platform(error.to_string()))?;
     runtime.spawn(async move {
         tokio::time::sleep(Duration::from_secs(2)).await;

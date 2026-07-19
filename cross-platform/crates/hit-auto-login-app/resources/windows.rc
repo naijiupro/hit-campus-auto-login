@@ -1,0 +1,5 @@
+#define RT_MANIFEST 24
+#define APP_ICON 101
+
+1 RT_MANIFEST "windows.manifest"
+APP_ICON ICON "wifi.ico"

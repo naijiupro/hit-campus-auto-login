@@ -18,14 +18,18 @@ if (Get-Command cargo -ErrorAction SilentlyContinue) {
 }
 
 & $Cargo fmt --all -- --check
+if ($LASTEXITCODE -ne 0) { throw 'cargo fmt 失败。' }
 if (-not $SkipTests) {
     & $Cargo test --workspace
+    if ($LASTEXITCODE -ne 0) { throw 'cargo test 失败。' }
 }
 & $Cargo build --release -p hit-auto-login
+if ($LASTEXITCODE -ne 0) { throw 'cargo build 失败。' }
 
 $Dist = Join-Path $Root 'dist\windows'
 New-Item -ItemType Directory -Force -Path $Dist | Out-Null
 $Exe = Join-Path $Root 'target\release\hit-auto-login.exe'
+& (Join-Path $PSScriptRoot 'verify-windows-binary.ps1') -ExePath $Exe
 Copy-Item -LiteralPath $Exe -Destination (Join-Path $Dist 'hit-auto-login.exe') -Force
 
 $Zip = Join-Path $Dist 'HITAutoLogin-Windows-x64.zip'
@@ -40,4 +44,3 @@ if ($Iscc) {
     Write-Host '未找到 Inno Setup；已生成可直接运行的 EXE 和 ZIP。'
 }
 Write-Host $Dist
-
